@@ -1,0 +1,13 @@
+.env
+*.env
+.venv/
+__pycache__/
+server/__pycache__/
+tests/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+openenv_codebug.egg-info/
