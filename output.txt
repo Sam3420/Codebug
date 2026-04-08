@@ -1,0 +1,11 @@
+
+========================================
+  OpenEnv Submission Validator
+========================================
+[14:03:10] Repo:     /c/Users/samri/RL/codebug
+[14:03:10] Ping URL: https://samridhi24-codebug.hf.space
+
+[14:03:11] Step 1/3: Pinging HF Space (https://samridhi24-codebug.hf.space/reset) ...
+[14:03:13] PASSED -- HF Space is live and responds to /reset
+[14:03:13] Step 2/3: Running docker build ...
+[14:03:13]   Found Dockerfile in /c/Users/samri/RL/codebug

@@ -165,6 +165,7 @@ def task_catalog() -> List[Dict[str, Any]]:
                 "type": "hidden_pytest",
                 "scoring_range": [0.0, 1.0],
                 "pass_metric": "pass_rate",
+                "enabled":True,
             },
         }
         for task in TASKS
