@@ -13,11 +13,13 @@ class DebugTask:
     task_id: str
     difficulty: str
     instruction: str
+    grader_id: str
     source: str
     entrypoint_call: str
     hidden_test_source: str
     expected_bug_lines: List[int]
     patch_budget_lines: int
+    max_steps: int
 
 
 TASKS: List[DebugTask] = [
@@ -27,6 +29,7 @@ TASKS: List[DebugTask] = [
         instruction=(
             "Fix the logic bug so aggregate_range returns the inclusive sum from 1 to n."
         ),
+        grader_id="grade_easy_off_by_one",
         source="""def aggregate_range(n: int) -> int:
     total = 0
     for value in range(1, n):
@@ -51,6 +54,7 @@ def test_render_report():
 """,
         expected_bug_lines=[3],
         patch_budget_lines=2,
+        max_steps=8,
     ),
     DebugTask(
         task_id="medium_mutable_default",
@@ -58,6 +62,7 @@ def test_render_report():
         instruction=(
             "Fix the state-leak bug so collect_tags does not reuse data across calls."
         ),
+        grader_id="grade_medium_mutable_default",
         source="""from typing import List, Optional
 
 
@@ -87,6 +92,7 @@ def test_build_ticket_isolated():
 """,
         expected_bug_lines=[4],
         patch_budget_lines=4,
+        max_steps=10,
     ),
     DebugTask(
         task_id="hard_cross_function_corruption",
@@ -95,6 +101,7 @@ def test_build_ticket_isolated():
             "Fix the source of the corrupted user record so build_profile returns the "
             "primary email address without crashing."
         ),
+        grader_id="grade_hard_cross_function_corruption",
         source="""def normalize_user(payload: dict) -> dict:
     return {
         "name": payload["name"].strip().title(),
@@ -133,8 +140,12 @@ def test_enrich_user():
 """,
         expected_bug_lines=[4, 9],
         patch_budget_lines=4,
+        max_steps=12,
     ),
 ]
+
+
+TASK_BY_ID: Dict[str, DebugTask] = {task.task_id: task for task in TASKS}
 
 
 def get_task(index: int) -> DebugTask:
@@ -146,10 +157,7 @@ def get_task(index: int) -> DebugTask:
 def get_task_by_id(task_id: str) -> DebugTask:
     """Return a task by public identifier."""
 
-    for task in TASKS:
-        if task.task_id == task_id:
-            return task
-    raise KeyError(task_id)
+    return TASK_BY_ID[task_id]
 
 
 def task_catalog() -> List[Dict[str, Any]]:
@@ -159,13 +167,17 @@ def task_catalog() -> List[Dict[str, Any]]:
         {
             "task_id": task.task_id,
             "difficulty": task.difficulty,
+            "description": task.instruction,
             "instruction": task.instruction,
+            "grader_id": task.grader_id,
             "patch_budget_lines": task.patch_budget_lines,
+            "max_steps": task.max_steps,
             "grader": {
+                "grader_id": task.grader_id,
                 "type": "hidden_pytest",
                 "scoring_range": [0.0, 1.0],
                 "pass_metric": "pass_rate",
-                "enabled":True,
+                "enabled": True,
             },
         }
         for task in TASKS

@@ -39,10 +39,12 @@ try:
     from ..models import CodebugAction, CodebugObservation
     from .codebug_environment import CodebugEnvironment
     from .tasks import TASKS, task_catalog
+    from ..graders import GRADER_SPECS
 except ImportError:
     from models import CodebugAction, CodebugObservation
     from server.codebug_environment import CodebugEnvironment
     from server.tasks import TASKS, task_catalog
+    from graders import GRADER_SPECS
 
 
 # Create the app with web interface and README integration
@@ -66,11 +68,14 @@ async def metadata() -> dict:
         "description": "High-fidelity Python debugging benchmark for OpenEnv.",
         "version": "1.0.0",
         "task_count": len(TASKS),
+        "grader_count": len(GRADER_SPECS),
         "tasks": task_catalog(),
+        "graders": GRADER_SPECS,
         "grader": {
             "type": "hidden_pytest",
             "scoring_range": [0.0, 1.0],
             "terminal_tool": "submit_fix",
+            "enabled": True,
         },
     }
 
@@ -80,6 +85,14 @@ async def tasks() -> dict:
     return {
         "task_count": len(TASKS),
         "tasks": task_catalog(),
+    }
+
+
+@app.get("/graders", tags=["Environment Info"])
+async def graders() -> dict:
+    return {
+        "grader_count": len(GRADER_SPECS),
+        "graders": GRADER_SPECS,
     }
 
 
