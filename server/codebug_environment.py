@@ -12,13 +12,13 @@ try:
     from ..models import CodebugAction, CodebugObservation
     from .engine import VirtualDebuggerEngine
     from .grader import grade_submission, run_hidden_tests
-    from .tasks import DebugTask, get_task
+    from .tasks import DebugTask, get_task, get_task_by_id
 except ImportError:
     from compat import Environment, State
     from models import CodebugAction, CodebugObservation
     from server.engine import VirtualDebuggerEngine
     from server.grader import grade_submission, run_hidden_tests
-    from server.tasks import DebugTask, get_task
+    from server.tasks import DebugTask, get_task, get_task_by_id
 
 
 ALL_TOOLS: List[str] = [
@@ -55,10 +55,13 @@ class CodebugEnvironment(Environment):
         self._done = False
         self._episode_score = 0.0
 
-    def reset(self) -> CodebugObservation:
-        with self._task_counter_lock:
-            self._task_index = next(self._task_counter)
-        self._task = get_task(self._task_index)
+    def reset(self, task_id: Optional[str] = None) -> CodebugObservation:
+        if task_id:
+            self._task = get_task_by_id(task_id)
+        else:
+            with self._task_counter_lock:
+                self._task_index = next(self._task_counter)
+            self._task = get_task(self._task_index)
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self._current_source = self._task.source
         self._last_test_output = ""

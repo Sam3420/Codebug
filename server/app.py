@@ -75,6 +75,14 @@ async def metadata() -> dict:
     }
 
 
+@app.get("/tasks", tags=["Environment Info"])
+async def tasks() -> dict:
+    return {
+        "task_count": len(TASKS),
+        "tasks": task_catalog(),
+    }
+
+
 def main() -> None:
     """
     Entry point for direct execution via uv run or python -m.

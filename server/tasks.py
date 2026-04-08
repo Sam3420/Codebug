@@ -143,6 +143,15 @@ def get_task(index: int) -> DebugTask:
     return TASKS[index % len(TASKS)]
 
 
+def get_task_by_id(task_id: str) -> DebugTask:
+    """Return a task by public identifier."""
+
+    for task in TASKS:
+        if task.task_id == task_id:
+            return task
+    raise KeyError(task_id)
+
+
 def task_catalog() -> List[Dict[str, Any]]:
     """Return public task metadata for validators and UIs."""
 
