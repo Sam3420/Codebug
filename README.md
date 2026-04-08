@@ -1,12 +1,5 @@
 ---
 title: Codebug DebugEnv
-emoji: 🐞
-colorFrom: red
-colorTo: blue
-sdk: docker
-pinned: false
-app_port: 8000
-base_path: /web
 tags:
   - openenv
   - reinforcement-learning
