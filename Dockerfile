@@ -42,6 +42,7 @@ WORKDIR /app
 
 COPY --from=builder /app/env/.venv /app/.venv
 COPY --from=builder /app/env /app/env
+ENV ENABLE_WEB_INTERFACE=true
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app/env:$PYTHONPATH"
