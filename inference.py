@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import textwrap
@@ -14,6 +15,11 @@ from client import CodebugEnv
 from models import CodebugAction
 
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
+ENV_HTTP_URL = (
+    os.getenv("ENV_HTTP_URL")
+    or os.getenv("OPENENV_BASE_URL")
+    or os.getenv("BASE_URL")
+)
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
@@ -171,18 +177,32 @@ def coerce_action(candidate: Optional[dict], task_id: str, step: int) -> Codebug
     return CodebugAction(**data)
 
 
-def main() -> None:
+async def create_env() -> CodebugEnv:
+    """Create an environment client using the best available connection mode."""
+
+    if LOCAL_IMAGE_NAME:
+        return await CodebugEnv.from_docker_image(LOCAL_IMAGE_NAME)
+    if ENV_HTTP_URL:
+        return CodebugEnv(base_url=ENV_HTTP_URL)
+
+    # Validator-safe fallback: try local server first.
+    return CodebugEnv(base_url="http://127.0.0.1:8000")
+
+
+async def main() -> None:
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY or "missing")
-    env = CodebugEnv.from_docker_image(LOCAL_IMAGE_NAME) if LOCAL_IMAGE_NAME else CodebugEnv()
+    env: Optional[CodebugEnv] = None
 
     rewards: List[float] = []
     steps_taken = 0
     score = 0.0
     success = False
+    fatal_error: Optional[str] = None
 
     log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
     try:
-        result = env.reset()
+        env = await create_env()
+        result = await env.reset()
         observation = result.observation
 
         for step in range(1, MAX_STEPS + 1):
@@ -195,7 +215,7 @@ def main() -> None:
             )
             action = coerce_action(proposed, observation.task_id, step)
             action_str = json.dumps(action.model_dump(exclude_none=True), separators=(",", ":"))
-            result = env.step(action)
+            result = await env.step(action)
             observation = result.observation
             reward = float(result.reward or 0.0)
             rewards.append(reward)
@@ -210,15 +230,31 @@ def main() -> None:
             if result.done:
                 break
 
-        score = float(observation.metadata.get("score", 0.0))
-        score = min(max(score, 0.0), 1.0)
+        raw_score = observation.metadata.get("score")
+        if raw_score is None:
+            raw_score = rewards[-1] if rewards else 0.0
+        score = min(max(float(raw_score), 0.0), 1.0)
         success = score >= SUCCESS_SCORE_THRESHOLD
+    except Exception as exc:
+        fatal_error = f"{type(exc).__name__}: {exc}"
+        if steps_taken == 0:
+            log_step(
+                step=0,
+                action="init",
+                reward=0.00,
+                done=True,
+                error=fatal_error,
+            )
     finally:
         try:
-            env.close()
+            if env is not None:
+                await env.close()
         finally:
+            if fatal_error:
+                score = 0.0
+                success = False
             log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
