@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
+from typing import Any, Dict, List
 
 
 @dataclass(frozen=True)
@@ -141,3 +141,22 @@ def get_task(index: int) -> DebugTask:
     """Return a task using deterministic round-robin selection."""
 
     return TASKS[index % len(TASKS)]
+
+
+def task_catalog() -> List[Dict[str, Any]]:
+    """Return public task metadata for validators and UIs."""
+
+    return [
+        {
+            "task_id": task.task_id,
+            "difficulty": task.difficulty,
+            "instruction": task.instruction,
+            "patch_budget_lines": task.patch_budget_lines,
+            "grader": {
+                "type": "hidden_pytest",
+                "scoring_range": [0.0, 1.0],
+                "pass_metric": "pass_rate",
+            },
+        }
+        for task in TASKS
+    ]

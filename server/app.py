@@ -38,9 +38,11 @@ except Exception as e:  # pragma: no cover
 try:
     from ..models import CodebugAction, CodebugObservation
     from .codebug_environment import CodebugEnvironment
+    from .tasks import TASKS, task_catalog
 except ImportError:
     from models import CodebugAction, CodebugObservation
     from server.codebug_environment import CodebugEnvironment
+    from server.tasks import TASKS, task_catalog
 
 
 # Create the app with web interface and README integration
@@ -51,6 +53,26 @@ app = create_app(
     env_name="codebug",
     max_concurrent_envs=1,
 )
+
+app.router.routes = [
+    route for route in app.router.routes if getattr(route, "path", None) != "/metadata"
+]
+
+
+@app.get("/metadata", tags=["Environment Info"])
+async def metadata() -> dict:
+    return {
+        "name": "codebug",
+        "description": "High-fidelity Python debugging benchmark for OpenEnv.",
+        "version": "1.0.0",
+        "task_count": len(TASKS),
+        "tasks": task_catalog(),
+        "grader": {
+            "type": "hidden_pytest",
+            "scoring_range": [0.0, 1.0],
+            "terminal_tool": "submit_fix",
+        },
+    }
 
 
 def main() -> None:

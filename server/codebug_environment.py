@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from itertools import count
+from threading import Lock
 from typing import Dict, List, Optional
 from uuid import uuid4
 
@@ -38,6 +40,8 @@ class CodebugEnvironment(Environment):
     """A deterministic Python debugging environment for reinforcement learning."""
 
     SUPPORTS_CONCURRENT_SESSIONS: bool = False
+    _task_counter = count()
+    _task_counter_lock = Lock()
 
     def __init__(self) -> None:
         self._state = State(episode_id=str(uuid4()), step_count=0)
@@ -52,7 +56,8 @@ class CodebugEnvironment(Environment):
         self._episode_score = 0.0
 
     def reset(self) -> CodebugObservation:
-        self._task_index += 1
+        with self._task_counter_lock:
+            self._task_index = next(self._task_counter)
         self._task = get_task(self._task_index)
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self._current_source = self._task.source
